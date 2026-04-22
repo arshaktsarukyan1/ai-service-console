@@ -32,7 +32,7 @@ const default_model = ref('Unknown')
 const task_options: TaskOption[] = [
   { value: 'information_preparation', label: 'Information Preparation' },
   { value: 'information_structuring', label: 'Information Structuring' },
-  { value: 'voice_assistant', label: 'Voice Response' }
+  { value: 'voice_assistant', label: 'Voice Response' },
 ]
 
 const available_tasks = computed(() => task_options.map(({ label }) => label))
@@ -46,7 +46,7 @@ const load_provider = async (): Promise<void> => {
 
   try {
     const response = await $fetch<ProviderResponse>(provider_api_url, {
-      method: 'GET'
+      method: 'GET',
     })
 
     active_provider.value = (response.active_provider || 'Unknown').toString()
@@ -62,7 +62,8 @@ const load_provider = async (): Promise<void> => {
 
 const parse_metadata = (): Record<string, unknown> => {
   const parsed_json = JSON.parse(metadata_text.value)
-  if (parsed_json && typeof parsed_json === 'object' && !Array.isArray(parsed_json)) return parsed_json as Record<string, unknown>
+  if (parsed_json && typeof parsed_json === 'object' && !Array.isArray(parsed_json))
+    return parsed_json as Record<string, unknown>
   throw new Error('Metadata must be a JSON object.')
 }
 
@@ -78,14 +79,14 @@ const execute_task = async (): Promise<void> => {
     const payload: ExecutePayload = {
       task: selected_task.value,
       input_text: input_text.value.trim(),
-      metadata
+      metadata,
     }
 
     if (!payload.input_text) throw new Error('Input text is required.')
 
     const response = await $fetch<Record<string, unknown>>(api_url.value, {
       method: 'POST',
-      body: payload
+      body: payload,
     })
 
     response_text.value = JSON.stringify(response, null, 2)
@@ -120,7 +121,9 @@ onMounted(async () => {
         <article class="card">
           <h2>Service Status</h2>
           <p :class="['status', { healthy: is_healthy }]">{{ status_label }}</p>
-          <p class="hint" v-if="response_time_ms !== null">Last request: {{ response_time_ms }} ms</p>
+          <p class="hint" v-if="response_time_ms !== null">
+            Last request: {{ response_time_ms }} ms
+          </p>
         </article>
 
         <article class="card">
@@ -152,7 +155,12 @@ onMounted(async () => {
         </select>
 
         <label for="input-text">Input Text</label>
-        <textarea id="input-text" v-model="input_text" rows="4" placeholder="Enter input data or text here..." />
+        <textarea
+          id="input-text"
+          v-model="input_text"
+          rows="4"
+          placeholder="Enter input data or text here..."
+        />
 
         <label for="metadata-json">Metadata (JSON Object)</label>
         <textarea id="metadata-json" v-model="metadata_text" rows="5" />
@@ -197,7 +205,12 @@ onMounted(async () => {
   min-height: 100vh;
   background: #f4f6fb;
   color: #1f2937;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   padding: 28px;
 }
 

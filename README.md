@@ -20,6 +20,20 @@ yarn install
 bun install
 ```
 
+## Formatting
+
+Format all supported files:
+
+```bash
+npm run format
+```
+
+Check formatting without writing changes:
+
+```bash
+npm run format:check
+```
+
 ## Development Server
 
 Start the development server on `http://localhost:3000`:

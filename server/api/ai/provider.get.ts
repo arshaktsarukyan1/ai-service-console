@@ -4,21 +4,23 @@ export default defineEventHandler(async (event) => {
 
   try {
     return await $fetch<Record<string, unknown>>(endpoint, {
-      method: 'GET'
+      method: 'GET',
     })
   } catch (error: unknown) {
-    const statusCode = typeof error === 'object' && error && 'statusCode' in error
-      ? Number((error as { statusCode?: number }).statusCode) || 502
-      : 502
+    const statusCode =
+      typeof error === 'object' && error && 'statusCode' in error
+        ? Number((error as { statusCode?: number }).statusCode) || 502
+        : 502
     const statusMessage = 'Failed to load provider configuration from backend service.'
-    const data = typeof error === 'object' && error && 'data' in error
-      ? (error as { data?: unknown }).data
-      : undefined
+    const data =
+      typeof error === 'object' && error && 'data' in error
+        ? (error as { data?: unknown }).data
+        : undefined
 
     throw createError({
       statusCode,
       statusMessage,
-      data
+      data,
     })
   }
 })

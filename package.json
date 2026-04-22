@@ -5,6 +5,8 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
@@ -16,5 +18,8 @@
   },
   "optionalDependencies": {
     "@oxc-parser/binding-linux-x64-gnu": "^0.117.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.3"
   }
 }
