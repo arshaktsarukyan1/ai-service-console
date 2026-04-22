@@ -37,7 +37,7 @@ const task_options: TaskOption[] = [
 
 const available_tasks = computed(() => task_options.map(({ label }) => label))
 
-const is_healthy = computed(() => !request_error.value)
+const is_healthy = computed(() => !request_error.value && !provider_error.value)
 const status_label = computed(() => (is_healthy.value ? 'Healthy' : 'Needs attention'))
 
 const load_provider = async (): Promise<void> => {

@@ -1,89 +1,47 @@
-# Nuxt Minimal Starter
+# AI Service Console
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Nuxt UI for testing Task 1 backend APIs.
+
+## Prerequisites
+
+- Node.js 22+
+- Backend service running (default: `http://127.0.0.1:8000`)
 
 ## Setup
 
-Make sure to install dependencies:
+Install dependencies:
 
 ```bash
-# npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Formatting
-
-Format all supported files:
+Create local env file:
 
 ```bash
-npm run format
+cp .env.example .env
 ```
 
-Check formatting without writing changes:
+Set backend base URL in `.env`:
 
-```bash
-npm run format:check
+```env
+BACKEND_BASE_URL=http://127.0.0.1:8000
 ```
 
-## Development Server
+## Run
 
-Start the development server on `http://localhost:3000`:
+Start development server:
 
 ```bash
-# npm
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+Open `http://localhost:3000`.
 
-Build the application for production:
+## API Integration
 
-```bash
-# npm
-npm run build
+The browser talks to Nuxt server routes, and Nuxt proxies requests to backend:
 
-# pnpm
-pnpm build
+- `POST /api/ai/execute` -> `POST /internal/ai/execute`
+- `GET /api/ai/provider` -> `GET /internal/ai/provider`
 
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+This avoids browser CORS issues on direct cross-origin calls.
