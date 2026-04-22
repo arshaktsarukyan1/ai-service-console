@@ -10,14 +10,24 @@ type ExecutePayload = {
   metadata: Record<string, unknown>
 }
 
+type ProviderResponse = {
+  active_provider?: string
+  default_model?: string
+}
+
 const api_url = ref('/api/ai/execute')
+const provider_api_url = '/api/ai/provider'
 const selected_task = ref('information_preparation')
 const input_text = ref('Summarize: FastAPI is a modern web framework.')
 const metadata_text = ref('{\n  "language": "en"\n}')
 const response_text = ref('')
 const request_error = ref('')
+const provider_error = ref('')
 const is_loading = ref(false)
+const is_loading_provider = ref(false)
 const response_time_ms = ref<number | null>(null)
+const active_provider = ref('Unknown')
+const default_model = ref('Unknown')
 
 const task_options: TaskOption[] = [
   { value: 'information_preparation', label: 'Information Preparation' },
@@ -29,6 +39,26 @@ const available_tasks = computed(() => task_options.map(({ label }) => label))
 
 const is_healthy = computed(() => !request_error.value)
 const status_label = computed(() => (is_healthy.value ? 'Healthy' : 'Needs attention'))
+
+const load_provider = async (): Promise<void> => {
+  provider_error.value = ''
+  is_loading_provider.value = true
+
+  try {
+    const response = await $fetch<ProviderResponse>(provider_api_url, {
+      method: 'GET'
+    })
+
+    active_provider.value = (response.active_provider || 'Unknown').toString()
+    default_model.value = (response.default_model || 'Unknown').toString()
+  } catch (error) {
+    active_provider.value = 'Unknown'
+    default_model.value = 'Unknown'
+    provider_error.value = error instanceof Error ? error.message : 'Failed to load provider.'
+  } finally {
+    is_loading_provider.value = false
+  }
+}
 
 const parse_metadata = (): Record<string, unknown> => {
   const parsed_json = JSON.parse(metadata_text.value)
@@ -73,6 +103,10 @@ const execute_task = async (): Promise<void> => {
     is_loading.value = false
   }
 }
+
+onMounted(async () => {
+  await load_provider()
+})
 </script>
 
 <template>
@@ -91,8 +125,10 @@ const execute_task = async (): Promise<void> => {
 
         <article class="card">
           <h2>Active Provider</h2>
-          <p class="provider-name">OpenAI</p>
-          <p class="hint">Model: based on backend configuration</p>
+          <p class="provider-name">{{ active_provider }}</p>
+          <p class="hint">Model: {{ default_model }}</p>
+          <p v-if="provider_error" class="error hint">{{ provider_error }}</p>
+          <p v-else-if="is_loading_provider" class="hint">Loading provider...</p>
         </article>
 
         <article class="card">
@@ -137,7 +173,8 @@ const execute_task = async (): Promise<void> => {
         <article class="card">
           <h2>Provider Configuration</h2>
           <ul>
-            <li><strong>Provider:</strong> OpenAI</li>
+            <li><strong>Provider:</strong> {{ active_provider }}</li>
+            <li><strong>Model:</strong> {{ default_model }}</li>
             <li><strong>Endpoint:</strong> {{ api_url }}</li>
             <li><strong>Status:</strong> {{ is_loading ? 'Executing request' : 'Ready' }}</li>
           </ul>
