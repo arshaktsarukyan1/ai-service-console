@@ -15,8 +15,43 @@ type ProviderResponse = {
   default_model?: string
 }
 
+type FaqLocation = {
+  id: string
+  name: string
+}
+
+type FaqLocationResponse = {
+  locations: FaqLocation[]
+}
+
+type FaqItem = {
+  question: string
+  answer: string
+}
+
+type FaqLocationDetail = {
+  id?: string
+  name?: string
+  start_date?: string
+  expected_end_date?: string
+  description?: string
+  costs?: string
+  initiator?: string
+  address?: string
+  area?: string
+  latitude?: number
+  longitude?: number
+}
+
+type FaqDetailResponse = {
+  location?: FaqLocationDetail
+  faqs?: FaqItem[]
+}
+
 const api_url = ref('/api/ai/execute')
 const provider_api_url = '/api/ai/provider'
+const faq_locations_api_url = '/api/faq/locations'
+const faq_api_base_url = '/api/faq'
 const selected_task = ref('information_preparation')
 const input_text = ref('Summarize: FastAPI is a modern web framework.')
 const metadata_text = ref('{\n  "language": "en"\n}')
@@ -28,6 +63,13 @@ const is_loading_provider = ref(false)
 const response_time_ms = ref<number | null>(null)
 const active_provider = ref('Unknown')
 const default_model = ref('Unknown')
+const selected_location_id = ref('')
+const faq_locations = ref<FaqLocation[]>([])
+const faq_location_detail = ref<FaqLocationDetail | null>(null)
+const faq_items = ref<FaqItem[]>([])
+const faq_error = ref('')
+const is_loading_faq_locations = ref(false)
+const is_loading_faq_detail = ref(false)
 
 const task_options: TaskOption[] = [
   { value: 'information_preparation', label: 'Information Preparation' },
@@ -105,8 +147,55 @@ const execute_task = async (): Promise<void> => {
   }
 }
 
+const load_faq_locations = async (): Promise<void> => {
+  faq_error.value = ''
+  is_loading_faq_locations.value = true
+
+  try {
+    const response = await $fetch<FaqLocationResponse>(faq_locations_api_url, {
+      method: 'GET',
+    })
+    faq_locations.value = Array.isArray(response.locations) ? response.locations : []
+    selected_location_id.value = faq_locations.value[0]?.id || ''
+  } catch (error) {
+    faq_locations.value = []
+    selected_location_id.value = ''
+    faq_error.value = error instanceof Error ? error.message : 'Failed to load locations.'
+  } finally {
+    is_loading_faq_locations.value = false
+  }
+}
+
+const load_faq_for_location = async (): Promise<void> => {
+  faq_error.value = ''
+
+  if (!selected_location_id.value) {
+    faq_location_detail.value = null
+    faq_items.value = []
+    faq_error.value = 'Please select a location first.'
+    return
+  }
+
+  is_loading_faq_detail.value = true
+
+  try {
+    const endpoint = `${faq_api_base_url}/${selected_location_id.value}`
+    const response = await $fetch<FaqDetailResponse>(endpoint, {
+      method: 'GET',
+    })
+    faq_location_detail.value = response.location || null
+    faq_items.value = Array.isArray(response.faqs) ? response.faqs : []
+  } catch (error) {
+    faq_location_detail.value = null
+    faq_items.value = []
+    faq_error.value = error instanceof Error ? error.message : 'Failed to load FAQ details.'
+  } finally {
+    is_loading_faq_detail.value = false
+  }
+}
+
 onMounted(async () => {
-  await load_provider()
+  await Promise.all([load_provider(), load_faq_locations()])
 })
 </script>
 
@@ -187,6 +276,60 @@ onMounted(async () => {
             <li><strong>Status:</strong> {{ is_loading ? 'Executing request' : 'Ready' }}</li>
           </ul>
         </article>
+      </section>
+
+      <section class="card faq-card">
+        <h2>FAQ Tester (Task 2)</h2>
+
+        <div class="faq-controls">
+          <div class="field">
+            <label for="faq-locations-url">Locations Endpoint</label>
+            <input id="faq-locations-url" :value="faq_locations_api_url" type="text" readonly />
+          </div>
+
+          <div class="field">
+            <label for="faq-location-id">Location</label>
+            <select id="faq-location-id" v-model="selected_location_id">
+              <option disabled value="">Select a location</option>
+              <option v-for="location in faq_locations" :key="location.id" :value="location.id">
+                {{ location.name }} ({{ location.id }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="faq-actions">
+          <button :disabled="is_loading_faq_locations" @click="load_faq_locations">
+            {{ is_loading_faq_locations ? 'Refreshing...' : 'Refresh Locations' }}
+          </button>
+          <button :disabled="is_loading_faq_detail" @click="load_faq_for_location">
+            {{ is_loading_faq_detail ? 'Loading FAQ...' : 'Load FAQ' }}
+          </button>
+        </div>
+
+        <p v-if="faq_error" class="error">{{ faq_error }}</p>
+        <p v-else-if="is_loading_faq_locations || is_loading_faq_detail" class="hint">
+          Loading FAQ data...
+        </p>
+
+        <div v-else-if="faq_location_detail" class="faq-location">
+          <h3>{{ faq_location_detail.name || selected_location_id }}</h3>
+          <p class="hint">{{ faq_location_detail.description || 'No location description returned.' }}</p>
+          <ul class="faq-meta">
+            <li><strong>Start:</strong> {{ faq_location_detail.start_date || 'N/A' }}</li>
+            <li><strong>Expected End:</strong> {{ faq_location_detail.expected_end_date || 'N/A' }}</li>
+            <li><strong>Area:</strong> {{ faq_location_detail.area || 'N/A' }}</li>
+            <li><strong>Address:</strong> {{ faq_location_detail.address || 'N/A' }}</li>
+          </ul>
+        </div>
+
+        <div v-if="faq_items.length" class="faq-grid">
+          <article v-for="item in faq_items" :key="item.question" class="faq-item">
+            <h4>{{ item.question }}</h4>
+            <p>{{ item.answer }}</p>
+          </article>
+        </div>
+        <p v-else-if="faq_location_detail && !faq_error" class="hint">No FAQ entries returned.</p>
       </section>
     </main>
   </div>
@@ -343,10 +486,83 @@ li {
   font-weight: 600;
 }
 
+.faq-card {
+  margin-top: 16px;
+}
+
+.faq-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faq-actions {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.faq-location {
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.faq-location h3 {
+  margin: 0;
+}
+
+.faq-meta {
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
+
+.faq-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.faq-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  background: #fff;
+}
+
+.faq-item h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.faq-item p {
+  margin: 0;
+  color: #374151;
+  line-height: 1.5;
+}
+
 @media (max-width: 980px) {
   .top-cards,
   .bottom-cards {
     grid-template-columns: 1fr;
+  }
+
+  .faq-controls,
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .faq-actions {
+    flex-wrap: wrap;
   }
 
   .page {
